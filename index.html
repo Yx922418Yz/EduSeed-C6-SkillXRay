@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill X-Ray · 技能分析器</title>
+<style>
+:root{
+  --teal-900:#0f3d3e; --teal-700:#0f6e6e; --teal-600:#0d8a8a; --teal-500:#14a0a0;
+  --teal-100:#d4efef; --teal-50:#eefafa;
+  --bg:#f4fafb; --card:#ffffff; --ink:#123; --muted:#5b7a7a;
+  --line:#d8eaea; --warn:#b4550e; --bad:#b3261e; --good:#0f7b4d;
+  --shadow:0 4px 18px rgba(15,110,110,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+header{background:linear-gradient(135deg,var(--teal-700),var(--teal-500));color:#fff;padding:22px 20px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+header h1{margin:0;font-size:24px;letter-spacing:.5px}
+header p{margin:6px 0 0;opacity:.92;font-size:14px}
+.badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:2px 10px;font-size:12px;margin-right:6px}
+main{padding:20px 0 60px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px}
+.card h2{margin:0 0 10px;font-size:16px;color:var(--teal-700);display:flex;align-items:center;gap:8px}
+textarea{width:100%;min-height:280px;border:1.5px solid var(--line);border-radius:10px;padding:12px;font-family:Consolas,monospace;font-size:13px;resize:vertical;background:var(--teal-50)}
+textarea:focus{outline:2px solid var(--teal-500);border-color:var(--teal-500)}
+.btn{background:var(--teal-600);color:#fff;border:0;border-radius:10px;padding:11px 20px;font-size:15px;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--teal-700)}
+.btn.ghost{background:#fff;color:var(--teal-700);border:1.5px solid var(--teal-600)}
+.btn.small{padding:7px 14px;font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+input[type=text],input[type=password],input[type=url]{border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;width:100%}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.kv:last-child{border-bottom:0}
+.kv b{color:var(--teal-700)}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0}
+.tag.ok{background:#dcf5e8;color:var(--good)}
+.tag.miss{background:#fde2e0;color:var(--bad)}
+.tag.warn{background:#fff1e0;color:var(--warn)}
+.tree{font-family:Consolas,monospace;font-size:13px;background:var(--teal-50);border-radius:10px;padding:14px;white-space:pre;overflow-x:auto;color:var(--teal-900)}
+.scorebar{height:10px;background:#e4f1f1;border-radius:999px;overflow:hidden;margin:6px 0 4px}
+.scorebar>i{display:block;height:100%;background:linear-gradient(90deg,var(--teal-500),var(--teal-700))}
+.score-row{margin-bottom:12px}
+.score-row .lab{display:flex;justify-content:space-between;font-size:13px}
+.sugg{border-left:3px solid var(--teal-500);background:var(--teal-50);padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:8px;font-size:14px}
+.sugg.pri-high{border-left-color:var(--bad)}
+.sugg.pri-mid{border-left-color:var(--warn)}
+details{margin-top:8px}
+summary{cursor:pointer;color:var(--teal-700);font-weight:600;font-size:14px}
+.ai-box{background:#0f3d3e;color:#d4efef;border-radius:10px;padding:14px;margin-top:10px;font-size:14px;white-space:pre-wrap;display:none}
+.ai-box.show{display:block}
+.footnote{font-size:12px;color:var(--muted);margin-top:10px}
+.hidden{display:none}
+.pill{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--teal-100);color:var(--teal-700)}
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.stat{flex:1;min-width:120px;background:var(--teal-50);border-radius:10px;padding:10px;text-align:center}
+.stat .n{font-size:22px;font-weight:700;color:var(--teal-700)}
+.stat .t{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Skill X-Ray · 技能分析器</h1>
+    <p>粘贴或上传 SKILL.md / .skill 文件，本地规则引擎即刻给出结构化体检：身份、用途、目录树、四维评分 D1–D4、改进建议。
+    <br><span class="badge">无需 API Key</span><span class="badge">免登录</span><span class="badge">纯本地运行</span><span class="badge">可选 AI 深度点评</span></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+    <!-- 左：输入 -->
+    <div class="card">
+      <h2>① 输入技能内容</h2>
+      <textarea id="input" placeholder='把 SKILL.md 的完整内容粘贴到这里……&#10;&#10;或直接拖入 / 选择一个 .md 或 .skill 文件。&#10;示例 frontmatter：&#10;---&#10;name: my-skill&#10;description: 一句话说明这个技能做什么&#10;---'></textarea>
+      <div class="row">
+        <button class="btn" id="analyzeBtn">X-Ray 分析</button>
+        <button class="btn ghost" id="sampleBtn">载入示例</button>
+        <button class="btn ghost small" id="fileBtn">选择文件</button>
+        <input type="file" id="fileInput" accept=".md,.skill,.txt" class="hidden">
+        <button class="btn ghost small" id="clearBtn">清空</button>
+      </div>
+
+      <details style="margin-top:16px">
+        <summary>可选：接入自己的 AI Key 做深度点评（仅存本机浏览器 localStorage，绝不上传）</summary>
+        <div style="margin-top:10px">
+          <label style="font-size:13px">Base URL（OpenAI 兼容，如 https://api.openai.com/v1 或你自己的中转）</label>
+          <input type="url" id="aiBase" placeholder="https://api.openai.com/v1">
+          <label style="font-size:13px;margin-top:8px;display:block">API Key</label>
+          <input type="password" id="aiKey" placeholder="sk-...">
+          <label style="font-size:13px;margin-top:8px;display:block">模型名</label>
+          <input type="text" id="aiModel" placeholder="gpt-4o-mini">
+          <div class="row">
+            <button class="btn small" id="aiBtn">请求 AI 深度点评</button>
+            <span class="footnote">Key 仅写入 localStorage，刷新后仍在；点"清空"不会删 Key。</span>
+          </div>
+          <div class="ai-box" id="aiOut"></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- 右：输出 -->
+    <div class="card">
+      <h2>② 分析报告 <span class="pill" id="statusPill">等待输入</span></h2>
+      <div id="report"><p class="footnote">还没有分析结果。点左侧"X-Ray 分析"开始。</p></div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ============ 本地规则引擎：完全离线，不需要任何 API key ============ */
+function parseFrontmatter(text){
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if(!m) return {raw:"", fields:{}};
+  const fields = {};
+  m[1].split(/\r?\n/).forEach(line=>{
+    const mm = line.match(/^([A-Za-z_][\w-]*)\s*:\s*(.*)$/);
+    if(mm) fields[mm[1].trim()] = mm[2].trim().replace(/^["']|["']$/g,"");
+  });
+  return {raw:m[1], fields};
+}
+function extractHeadings(text){
+  const hs=[];
+  text.split(/\r?\n/).forEach(line=>{
+    const m=line.match(/^(#{1,3})\s+(.*)/);
+    if(m) hs.push({level:m[1].length, title:m[2].trim()});
+  });
+  return hs;
+}
+function detectDirs(text){
+  const dirs=new Set();
+  const re=/`?((?:references|scripts|assets|examples|templates|prompts|tools|schemas|data|output|src|docs)/[^\s`)]*)`?/g;
+  let m; while((m=re.exec(text))!==null){ dirs.add(m[1]); }
+  return [...dirs].sort();
+}
+function detectKeywords(text){
+  const t=text.toLowerCase();
+  return {
+    hasDescription: /description\s*:/.test(t) && /(skill|能力|用于|针对|when|触发|用途)/.test(t),
+    hasWhenToUse: /(何时使用|when to use|触发条件|适用场景|use when)/.test(t),
+    hasWhenNot: /(不要|not for|不适用|when not|禁止|避免)/.test(t),
+    hasExamples: /(示例|example|样例|例如|e\.g)/.test(t),
+    hasReferences: /(references|参考文档|参考资料|reference)/.test(t),
+    hasScripts: /(scripts|脚本|\.py|\.sh|node )/.test(t),
+    hasVersion: /(version|版本|v\d)/.test(t),
+    hasWarnings: /(warning|注意|⚠|坑|常见错误|red flag)/.test(t),
+    hasDelivery: /(交付|deliver|提交|产出|deliverable)/.test(t),
+  };
+}
+function scoreD1(k, f){ // 结构完整性
+  let s=0; if(f.name) s+=25; if(f.description) s+=20;
+  if(k.hasReferences) s+=20; if(k.hasScripts) s+=15; if(k.hasExamples) s+=20;
+  return Math.min(100, s);
+}
+function scoreD2(k){ // 描述清晰度
+  let s=20; if(k.hasDescription) s+=30; if(k.hasWhenToUse) s+=25; if(k.hasWhenNot) s+=15; if(k.hasDelivery) s+=10;
+  return Math.min(100, s);
+}
+function scoreD3(k){ // 可复用性
+  let s=20; if(k.hasReferences) s+=25; if(k.hasScripts) s+=25; if(k.hasExamples) s+=20; if(k.hasVersion) s+=10;
+  return Math.min(100, s);
+}
+function scoreD4(k){ // 边界与风险
+  let s=20; if(k.hasWhenNot) s+=35; if(k.hasWarnings) s+=25; if(k.hasDelivery) s+=20;
+  return Math.min(100, s);
+}
+function buildSuggestions(k, hs, dirs){
+  const arr=[];
+  if(!document.getElementById('input').value.trim()) return arr;
+  if(!k.hasWhenToUse) arr.push({pri:'high', text:'缺少"何时使用 / 触发条件"——使用者不知道什么时候该调用这个技能，容易误触发。建议加一节"## 适用场景"。'});
+  if(!k.hasWhenNot) arr.push({pri:'high', text:'缺少"什么时候不要用 / 边界"——容易被滥用。建议加"## 不适用情形"小节。'});
+  if(!k.hasExamples) arr.push({pri:'mid', text:'没有示例（example / 样例）——新手难以判断输入输出格式。补 1-2 个最小示例。'});
+  if(!k.hasReferences) arr.push({pri:'mid', text:'没有 references/ 参考文档目录——长规则挤在 SKILL.md 里会让文件臃肿，把细则拆到 references/*.md。'});
+  if(!k.hasScripts) arr.push({pri:'mid', text:'没有 scripts/ 可执行脚本——纯提示词技能很难稳定复现，能脚本化的部分应脚本化。'});
+  if(!k.hasWarnings) arr.push({pri:'low', text:'没有"常见坑 / 注意事项"——把踩过的坑写进去，下一期直接复用。'});
+  if(hs.length<5) arr.push({pri:'mid', text:'标题层级偏少（'+hs.length+' 个）——建议至少有：名称/描述、适用场景、输入、流程、输出、参考。'});
+  if(dirs.length===0) arr.push({pri:'low', text:'未识别到 references/ scripts/ assets/ 等目录引用——如果技能依赖外部文件，请在正文里明确路径。'});
+  return arr;
+}
+function grade(s){ return s>=80?['优秀','ok']: s>=60?['良好','warn']: s>=40?['一般','warn']:['待改进','miss']; }
+
+function analyze(){
+  const text=document.getElementById('input').value;
+  const report=document.getElementById('report');
+  const pill=document.getElementById('statusPill');
+  if(!text.trim()){ pill.textContent='空输入'; report.innerHTML='<p class="footnote">请先粘贴或选择一个技能文件。</p>'; return; }
+  const fm=parseFrontmatter(text);
+  const hs=extractHeadings(text);
+  const dirs=detectDirs(text);
+  const k=detectKeywords(text);
+  const D1=scoreD1(k,fm.fields), D2=scoreD2(k), D3=scoreD3(k), D4=scoreD4(k);
+  const avg=Math.round((D1+D2+D3+D4)/4);
+  const sugs=buildSuggestions(k,hs,dirs);
+  pill.textContent = avg>=80?'整体优秀': avg>=60?'整体良好': avg>=40?'需要打磨':'急需重构';
+
+  const treeHtml = dirs.length? dirs.map(d=>'├─ '+d).join('\n') : '(未识别到外部目录引用)';
+  const headHtml = hs.length? hs.slice(0,12).map(h=>'  '.repeat(h.level-1)+(h.level===1?'# ':'- ')+h.title).join('\n'):'(无 markdown 标题)';
+
+  report.innerHTML = `
+    <div class="stat-row">
+      <div class="stat"><div class="n">${avg}</div><div class="t">综合分（百分制）</div></div>
+      <div class="stat"><div class="n">${hs.length}</div><div class="t">标题小节</div></div>
+      <div class="stat"><div class="n">${dirs.length}</div><div class="t">外部目录引用</div></div>
+      <div class="stat"><div class="n">${sugs.length}</div><div class="t">改进建议</div></div>
+    </div>
+
+    <h2 style="font-size:14px">① 技能身份</h2>
+    <div class="kv"><span>名称 (name)</span><b>${fm.fields.name||'<span style="color:var(--bad)">未在 frontmatter 声明</span>'}</b></div>
+    <div class="kv"><span>描述 (description)</span><b>${fm.fields.description? fm.fields.description.slice(0,60)+(fm.fields.description.length>60?'…':'') : '<span style="color:var(--bad)">缺失</span>'}</b></div>
+
+    <h2 style="font-size:14px;margin-top:14px">② 用途识别</h2>
+    <div>
+      ${k.hasWhenToUse?'<span class="tag ok">✓ 含触发/适用场景</span>':'<span class="tag miss">✗ 缺触发条件</span>'}
+      ${k.hasWhenNot?'<span class="tag ok">✓ 含不适用边界</span>':'<span class="tag miss">✗ 缺边界说明</span>'}
+      ${k.hasDelivery?'<span class="tag ok">✓ 定义了交付物</span>':'<span class="tag warn">? 交付物不明确</span>'}
+      ${k.hasExamples?'<span class="tag ok">✓ 有示例</span>':'<span class="tag miss">✗ 无示例</span>'}
+    </div>
+
+    <h2 style="font-size:14px;margin-top:14px">③ 目录结构可视化</h2>
+    <div class="tree">${fm.fields.name? fm.fields.name.replace(/\s+/g,'-').toLowerCase()+'.skill/' : 'skill-name/'}
+├─ SKILL.md
+${treeHtml}</div>
+    <details><summary>正文标题骨架</summary><div class="tree">${headHtml}</div></details>
+
+    <h2 style="font-size:14px;margin-top:14px">④ 四维评分 D1–D4</h2>
+    ${[['D1 结构完整性',D1],['D2 描述清晰度',D2],['D3 可复用性',D3],['D4 边界与风险',D4]].map(([l,v])=>{
+      const [g,c]=grade(v);
+      return `<div class="score-row"><div class="lab"><span>${l}</span><b>${v}/100 · <span class="tag ${c}">${g}</span></b></div><div class="scorebar"><i style="width:${v}%"></i></div></div>`;
+    }).join('')}
+
+    <h2 style="font-size:14px;margin-top:14px">⑤ 改进建议</h2>
+    ${sugs.length? sugs.map(s=>`<div class="sugg pri-${s.pri}"><b>[${s.pri==='high'?'高优先级':s.pri==='mid'?'中优先级':'低优先级'}]</b> ${s.text}</div>`).join(''):'<p class="footnote">未发现明显问题，结构已比较完整。</p>'}
+  `;
+}
+
+/* ============ 可选：OpenAI 兼容深度点评（key 仅 localStorage） ============ */
+async function aiDeepReview(){
+  const base=document.getElementById('aiBase').value.trim();
+  const key=document.getElementById('aiKey').value.trim();
+  const model=document.getElementById('aiModel').value.trim()||'gpt-4o-mini';
+  const out=document.getElementById('aiOut');
+  const text=document.getElementById('input').value;
+  if(!text.trim()){ alert('请先粘贴技能内容'); return; }
+  if(!base||!key){ alert('请填写 Base URL 和 API Key（仅存在你自己浏览器里）'); return; }
+  localStorage.setItem('skillxray_base',base);
+  localStorage.setItem('skillxray_model',model);
+  out.classList.add('show'); out.textContent='正在请求 '+model+' …';
+  try{
+    const r=await fetch(base.replace(/\/$/,'')+'/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model,messages:[
+        {role:'system',content:'你是一位资深 AI 技能（SKILL.md）架构师。请用中文、要点式输出：1) 这个技能的核心价值一句话；2) 3 个最关键改进点（按优先级）；3) 它适合放在产品工作流的哪一环。控制在 250 字内。'},
+        {role:'user',content:'待分析的 SKILL.md 如下：\n\n'+text.slice(0,6000)}
+      ],temperature:0.4})
+    });
+    if(!r.ok){ const e=await r.text(); throw new Error('HTTP '+r.status+': '+e.slice(0,200)); }
+    const j=await r.json();
+    out.textContent='【AI 深度点评 · '+model+'】\n\n'+j.choices[0].message.content;
+  }catch(err){ out.textContent='请求失败：'+err.message+'\n（常见原因：Base URL 写错、跨域被浏览器拦、Key 无额度。可在浏览器控制台看详情。）'; }
+}
+
+/* ============ 事件绑定 ============ */
+document.getElementById('analyzeBtn').onclick=analyze;
+document.getElementById('clearBtn').onclick=()=>{document.getElementById('input').value='';analyze();};
+document.getElementById('fileBtn').onclick=()=>document.getElementById('fileInput').click();
+document.getElementById('fileInput').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=()=>{document.getElementById('input').value=rd.result;analyze();};
+  rd.readAsText(f,'utf-8');
+};
+document.getElementById('aiBtn').onclick=aiDeepReview;
+document.getElementById('sampleBtn').onclick=()=>{
+  document.getElementById('input').value = `---
+name: wechat-doc-mapper
+description: 把散落在群文件里的提交文件按"作者×挑战"自动分类，输出 Markdown 映射表。
+---
+
+# WeChat Doc Mapper
+
+## 适用场景
+当群里收到一堆命名不规范的提交文件时，调用本技能批量归档。
+
+## 输入
+一个文件夹路径，内含若干 .md / .pdf / .png。
+
+## 流程
+1. 扫描文件名
+2. 正则提取作者和挑战编号
+3. 输出映射表
+
+## 参考
+- references/naming_rules.md
+- scripts/scan.py
+
+## 注意
+不要用于非课程提交的私人文件。
+`;
+  analyze();
+};
+/* 恢复上次填过的 key 配置 */
+document.getElementById('aiBase').value=localStorage.getItem('skillxray_base')||'';
+document.getElementById('aiModel').value=localStorage.getItem('skillxray_model')||'';
+</script>
+</body>
+</html>
