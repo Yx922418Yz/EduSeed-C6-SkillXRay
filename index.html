@@ -86,15 +86,20 @@ summary{cursor:pointer;color:var(--teal-700);font-weight:600;font-size:14px}
       <details style="margin-top:16px">
         <summary>可选：接入自己的 AI Key 做深度点评（仅存本机浏览器 localStorage，绝不上传）</summary>
         <div style="margin-top:10px">
-          <label style="font-size:13px">Base URL（OpenAI 兼容，如 https://api.openai.com/v1 或你自己的中转）</label>
-          <input type="url" id="aiBase" placeholder="https://api.openai.com/v1">
+          <label style="font-size:13px">Base URL（OpenAI 兼容）</label>
+          <input type="url" id="aiBase" placeholder="https://api.deepseek.com 或 https://api.openai.com/v1">
           <label style="font-size:13px;margin-top:8px;display:block">API Key</label>
           <input type="password" id="aiKey" placeholder="sk-...">
           <label style="font-size:13px;margin-top:8px;display:block">模型名</label>
-          <input type="text" id="aiModel" placeholder="gpt-4o-mini">
+          <input type="text" id="aiModel" placeholder="deepseek-chat 或 gpt-4o-mini">
+          <label style="font-size:13px;margin-top:8px;display:block">快捷预设（自动填 Base URL 与模型；Key 仍需自己填）</label>
+          <div class="row" style="margin-top:6px">
+            <button type="button" class="btn ghost small" data-preset="deepseek">DeepSeek（国内推荐）</button>
+            <button type="button" class="btn ghost small" data-preset="openai">OpenAI</button>
+          </div>
           <div class="row">
             <button class="btn small" id="aiBtn">请求 AI 深度点评</button>
-            <span class="footnote">Key 仅写入 localStorage，刷新后仍在；点"清空"不会删 Key。</span>
+            <span class="footnote">Key 仅写入 localStorage、绝不经过任何第三方服务器，刷新后仍在；点"清空"不会删 Key。DeepSeek 用户：点上方"DeepSeek"预设，再填自己的 Key 即可。</span>
           </div>
           <div class="ai-box" id="aiOut"></div>
         </div>
@@ -272,6 +277,16 @@ document.getElementById('fileInput').onchange=e=>{
   rd.readAsText(f,'utf-8');
 };
 document.getElementById('aiBtn').onclick=aiDeepReview;
+/* 快捷预设：自动填 Base URL 与模型（Key 仍由用户填写） */
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',e=>{
+  e.preventDefault();
+  const p=b.getAttribute('data-preset');
+  const set=(id,v)=>{document.getElementById(id).value=v;};
+  if(p==='deepseek'){ set('aiBase','https://api.deepseek.com'); set('aiModel','deepseek-chat'); }
+  if(p==='openai'){ set('aiBase','https://api.openai.com/v1'); set('aiModel','gpt-4o-mini'); }
+  localStorage.setItem('skillxray_base',document.getElementById('aiBase').value);
+  localStorage.setItem('skillxray_model',document.getElementById('aiModel').value);
+}));
 document.getElementById('sampleBtn').onclick=()=>{
   document.getElementById('input').value = `---
 name: wechat-doc-mapper
