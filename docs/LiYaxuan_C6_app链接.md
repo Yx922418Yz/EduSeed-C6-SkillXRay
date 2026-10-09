@@ -16,13 +16,15 @@
 | 加载 < 5 秒 | 是，纯静态单文件，无外部依赖 |
 | API Key 不暴露在前端 | 是，用户可选自填 OpenAI 兼容 key，仅存 localStorage |
 
-## 可选：AI 深度点评接入 DeepSeek（OpenAI 兼容）
+## 可选：AI 深度点评接入 DeepSeek（OpenAI 兼容）—— 已实测点通 ✅
 
-核心体检功能完全离线；如需 AI 深度点评，页面已内置 **DeepSeek 快捷预设**，无需任何中转：
+核心体检功能完全离线；AI 深度点评页面已内置 **DeepSeek 快捷预设**，无需任何中转：
 
 1. 展开"可选：接入自己的 AI Key"，点 **DeepSeek（国内推荐）**，自动填好
-   Base URL `https://api.deepseek.com`、模型 `deepseek-chat`；
+   Base URL `https://api.deepseek.com`、模型 `deepseek-flash`；
 2. 在 API Key 处填入自己的 DeepSeek key（sk- 开头，到 https://platform.deepseek.com 创建）；
-3. 点"请求 AI 深度点评"。Key 仅存在本机浏览器 localStorage，绝不写入代码、不经过第三方服务器。
+3. 点"请求 AI 深度点评"。Key 仅存在本机浏览器，绝不写入代码、不经过第三方服务器。
 
-> 说明：DeepSeek 提供与 OpenAI 完全兼容的 `/chat/completions` 接口，因此同一个前端可在 DeepSeek / OpenAI / 任意 OpenAI 兼容中转之间切换，只需改 Base URL 与模型名。浏览器端能否直接调通还取决于 DeepSeek 的跨域(CORS)策略；若个别网络环境拦截跨域，可改用任意同源/自建中转地址。
+**实测结果（2026-10-09）**：在浏览器中用 DeepSeek key 真实点通，返回了"核心价值 / 三个改进点 / 工作流位置"的完整点评（截图 `screenshots/05_AI深度点评_DeepSeek.png`）。跨域（CORS）已验证：DeepSeek 预检 `OPTIONS` 返回 200，且带 `access-control-allow-origin`（放行 GitHub Pages 源）、`allow-methods: POST`、`allow-headers: authorization,content-type`，因此页面可直接在浏览器调用，无需自建中转。
+
+> 模型 ID 说明：DeepSeek 当前线上模型为 `deepseek-flash`、`deepseek-v4-pro`（`GET https://api.deepseek.com/models` 可查），旧的 `deepseek-chat` 已退役。DeepSeek 与 OpenAI 的 `/chat/completions` 协议完全兼容，同一个前端可在 DeepSeek / OpenAI / 任意 OpenAI 兼容中转间切换，只需改 Base URL 与模型名。
