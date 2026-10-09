@@ -131,7 +131,7 @@ function extractHeadings(text){
 }
 function detectDirs(text){
   const dirs=new Set();
-  const re=/`?((?:references|scripts|assets|examples|templates|prompts|tools|schemas|data|output|src|docs)/[^\s`)]*)`?/g;
+  const re=/`?((?:references|scripts|assets|examples|templates|prompts|tools|schemas|data|output|src|docs)\/[^\s`)\]]+)`?/g;
   let m; while((m=re.exec(text))!==null){ dirs.add(m[1]); }
   return [...dirs].sort();
 }
