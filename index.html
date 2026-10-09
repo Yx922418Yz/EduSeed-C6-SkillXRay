@@ -91,7 +91,7 @@ summary{cursor:pointer;color:var(--teal-700);font-weight:600;font-size:14px}
           <label style="font-size:13px;margin-top:8px;display:block">API Key</label>
           <input type="password" id="aiKey" placeholder="sk-...">
           <label style="font-size:13px;margin-top:8px;display:block">模型名</label>
-          <input type="text" id="aiModel" placeholder="deepseek-chat 或 gpt-4o-mini">
+          <input type="text" id="aiModel" placeholder="deepseek-flash 或 gpt-4o-mini">
           <label style="font-size:13px;margin-top:8px;display:block">快捷预设（自动填 Base URL 与模型；Key 仍需自己填）</label>
           <div class="row" style="margin-top:6px">
             <button type="button" class="btn ghost small" data-preset="deepseek">DeepSeek（国内推荐）</button>
@@ -282,7 +282,7 @@ document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click'
   e.preventDefault();
   const p=b.getAttribute('data-preset');
   const set=(id,v)=>{document.getElementById(id).value=v;};
-  if(p==='deepseek'){ set('aiBase','https://api.deepseek.com'); set('aiModel','deepseek-chat'); }
+  if(p==='deepseek'){ set('aiBase','https://api.deepseek.com'); set('aiModel','deepseek-flash'); }
   if(p==='openai'){ set('aiBase','https://api.openai.com/v1'); set('aiModel','gpt-4o-mini'); }
   localStorage.setItem('skillxray_base',document.getElementById('aiBase').value);
   localStorage.setItem('skillxray_model',document.getElementById('aiModel').value);
